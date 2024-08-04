@@ -1,4 +1,8 @@
 [gpg "ssh"]
 	allowedsignersfile = test/allowed_signers
 
-    
+[commit]
+  gpgsign = true
+[gpg]
+	format = ssh
+	
