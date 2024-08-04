@@ -1,0 +1,4 @@
+[gpg "ssh"]
+	allowedsignersfile = test/allowed_signers
+
+    
