@@ -1,0 +1,39 @@
+param (
+    [string]$action
+)
+
+$patchDirectory = "C:\GitPatches"
+$dirName = Split-Path -Leaf (Get-Location)
+$patchFile = "$patchDirectory\$dirName.patch"
+$uncommitedChangesExist = !(git status --porcelain).Length -eq 0;
+
+if (!(Test-Path -Path $patchDirectory)) {
+    New-Item -ItemType Directory -Path $patchDirectory | Out-Null
+}
+
+if (!(git rev-parse --is-inside-work-tree) 2> $null)  {Write-Error "Outside a Git repository";exit 1;}
+
+
+switch ($action.ToLower()) {
+    "send" {
+        if (!($uncommitedChangesExist)) {Wri te-Error "Error: No Commited Changes"; exit 1}
+        git diff > $patchFile
+        Write-Output "Patch created: $patchFile"
+    }
+    "receive" {
+        if (!(Test-Path -Path $patchFile)) {Write-Error "Error: Patch file '$patchFile' not found in $patchDirectory."; exit 1}
+        if ($uncommitedChangesExist) {Write-Error "Error: Uncommitted changes detected. Commit or stash changes before applying the patch."; exit 1}
+
+        git apply $patchFile
+        Write-Output "Patch applied: $patchFile"
+    }
+    "remove"{
+        if(!(Test-Path -Path $patchFile)) {Write-Error "Patch already does not exist"; exit 1}
+        Remove-Item -Path $patchFile
+        Write-Output "Patch remvoed: $patchFile" 
+    }
+    Default {
+        Write-Error "Error: Invalid argument. Use 'Send' to create a patch or 'Receive' to apply a patch."
+    }
+}
+ 
