@@ -1,5 +1,6 @@
 param (
     [string]$action
+    [switch]$force
 )
 
 $patchDirectory = "C:\GitPatches"
@@ -17,20 +18,20 @@ if (!(git rev-parse --is-inside-work-tree) 2> $null)  {Write-Error "Outside a Gi
 switch ($action.ToLower()) {
     "send" {
         if (!($uncommitedChangesExist)) {Wri te-Error "Error: No Commited Changes"; exit 1}
-        git diff > $patchFile
+        git diff | Set-Content -Encoding utf8 $patchFile
         Write-Output "Patch created: $patchFile"
     }
     "receive" {
         if (!(Test-Path -Path $patchFile)) {Write-Error "Error: Patch file '$patchFile' not found in $patchDirectory."; exit 1}
-        if ($uncommitedChangesExist) {Write-Error "Error: Uncommitted changes detected. Commit or stash changes before applying the patch."; exit 1}
-
-        git apply $patchFile
+        if ($uncommitedChangesExist -and -not $force) {Write-Error "Error: Uncommitted changes detected. Commit or stash changes before applying the patch."; exit 1}
+        Write-Output (Get-Location)
+        git apply $patchFile --allow-empty -v --whitespace=fix
         Write-Output "Patch applied: $patchFile"
     }
     "remove"{
         if(!(Test-Path -Path $patchFile)) {Write-Error "Patch already does not exist"; exit 1}
         Remove-Item -Path $patchFile
-        Write-Output "Patch remvoed: $patchFile" 
+        Write-Output "Patch removed: $patchFile" 
     }
     Default {
         Write-Error "Error: Invalid argument. Use 'Send' to create a patch or 'Receive' to apply a patch."
